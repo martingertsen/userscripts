@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Imgur: Classic design: fix HTML escape sequences
+// @name         Imgur: Classic design: Fix HTML escape sequences
 // @namespace    http://tampermonkey.net/
 // @version      1.0.0
 // @description  Imgur's "classic" sometimes includes HTML escape sequences in post descriptions, such as having "&#34;" and "&#39;" instead of quotation marks. This replaces them with the appropriate characters.
