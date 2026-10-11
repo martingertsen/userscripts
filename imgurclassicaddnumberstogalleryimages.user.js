@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Imgur: classic design: add numbers to gallery images
+// @name         Imgur: Classic design: Add numbers to gallery images
 // @namespace    http://tampermonkey.net/
 // @version      1.0.0
 // @description  Adds numbers to the images in posts, indicating their position in the album, so you can refer to them in comments.
