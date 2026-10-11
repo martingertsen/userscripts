@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Imgur: add vote counts to comments
+// @name         Imgur: Add vote counts to comments
 // @namespace    http://tampermonkey.net/
 // @version      1.0.0
 // @description  This script adds vote counts (+ and -) to the visible points on comments. This information is normally not viewable on the web site despite being loaded from the API. It also removes the "via Android" and "via iPhone" badges in the old design, because I have a tendency to click on them accidentally and don't feel that they add any value.
