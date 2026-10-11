@@ -1,6 +1,6 @@
 
 // ==UserScript==
-// @name         Gallery Controls
+// @name         Discuit: Gallery Controls
 // @namespace    https://github.com/martingertsen/userscripts
 // @version      1.0.0
 // @updateURL    https://raw.githubusercontent.com/martingertsen/userscripts/main/discuitgallerycontrols.user.js
