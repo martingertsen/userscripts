@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Imgur: Classic design: enable line breaks in comments
+// @name         Imgur: Classic design: Enable line breaks in comments
 // @namespace    http://tampermonkey.net/
 // @version      1.0.0
 // @description  This script makes line breaks in comments visible. Normally, in the HTML, they are new line characters (\n), which aren't displayed as line breaks by a browser. This simply replaces them with <br/> elements, which are. You can enter line breaks, with or without this script, by pasting them from the clipboard.
