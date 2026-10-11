@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         YouTube Music Auto Continue
+// @name         YouTube Music: Auto Continue
 // @namespace    http://tampermonkey.net/
 // @version      1.0.0
 // @description  Automatically confirms the "Still watching/listening" prompt
