@@ -1,13 +1,17 @@
- // ==UserScript==
- // @name         Gallery Controls
- // @namespace    http://tampermonkey.net/
- // @version      1.0.0
- // @updateURL    https://github.com/martingertsen/userscripts/raw/refs/heads/main/discuitgallerycontrols.user.js
- // @downloadURL  https://github.com/martingertsen/userscripts/raw/refs/heads/main/discuitgallerycontrols.user.js
- // @description  Relocated the gallery controlls to below the gallery images.
- // @author       Martin Gertsen
 
- // ==/UserScript==
+// ==UserScript==
+// @name         Gallery Controls
+// @namespace    https://github.com/martingertsen/userscripts
+// @version      1.0.0
+// @updateURL    https://raw.githubusercontent.com/martingertsen/userscripts/main/discuitgallerycontrols.user.js
+// @downloadURL  https://raw.githubusercontent.com/martingertsen/userscripts/main/discuitgallerycontrols.user.js
+// @description  Relocates the gallery controls below the gallery images.
+// @author       Martin Gertsen
+// @match        https://discuit.org/*
+// @match        https://discuit.net/*
+// @icon         https://discuit.org/favicon.png
+// @grant        GM_addStyle
+// ==/UserScript==
 
 GM_addStyle(`
 .image-gallery-next-btn {
