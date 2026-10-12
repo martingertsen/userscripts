@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Imgur: Classic design
 // @namespace    http://tampermonkey.net/
-// @version      1.1.0
+// @version      1.2.0
 // @description  Collection of fixes and improvements for imgur's classic design: forces the classic design via cookies, 500 character comment limit, numbers on gallery images, fixed HTML escape sequences in descriptions, vote counts on comments (also works in the new design), hidden "via Android/iPhone" badges and visible line breaks in comments.
 // @author       Martin Gertsen
 // @match        https://imgur.com/*
@@ -16,7 +16,7 @@
 // This script merges the following scripts into one:
 // - Imgur Old Design (credit to /u/AyrA_ch, version 0.5)
 // - Imgur: Add vote counts to comments (credit to Corrodias: https://update.greasyfork.org/scripts/481387/Imgur%3A%20add%20vote%20counts%20to%20comments.user.js)
-// - Imgur: Classic design: Add numbers to gallery images
+// - Imgur numbered images (credit to ouroborus.org: https://update.greasyfork.org/scripts/373003/Imgur%20numbered%20images.user.js)
 // - Imgur: Classic design: Fix Comment 500 character Limit (credit to SleepProgger: https://update.greasyfork.org/scripts/463287/ImgurComment500Limit.user.js)
 // - Imgur: Classic design: Enable line breaks in comments (credit to Corrodias: https://update.greasyfork.org/scripts/486043/Imgur%3A%20enable%20line%20breaks%20in%20comments%20in%20the%20old%20design.user.js)
 // - Imgur: Classic design: Fix HTML escape sequences (credit to Corrodias: https://update.greasyfork.org/scripts/481153/Imgur%3A%20fix%20HTML%20escape%20sequences%20in%20the%20old%20design.user.js)
@@ -242,44 +242,50 @@
             return;
         }
 
-        const postImages = document.querySelector('.post-images');
-        if (postImages === null) {
-            return;
-        }
+        // Injected into the page context because it reads the page's Imgur global.
+        // Numbers are drawn with CSS ::after rules keyed on each image's hash, so the DOM is not modified.
+        function _injectNumberedImages() {
+            var hash = null;
 
-        function getImagesData() {
-            const node = document.querySelector('form.caption-create');
-            const instance = getReactProperty(node, '__reactInternalInstance$');
-            if (instance === null) {
-                return null;
-            }
-            const data = instance._currentElement._owner._instance.props.image.album_images;
-            if (data === undefined) {
-                // If there's only one image, sometimes this property doesn't exist.
-                return null;
-            }
-            return Array.isArray(data) ? data : data.images; // Oddly enough, on a fresh load, it's one type, and when navigating to a new post, it's the other.
-        }
-
-        function processAddedElement(node) {
-            if (!node.classList.contains('post-image-container')) {
-                return;
+            function numberItems(images) {
+                var s = document.getElementById('numberItems');
+                if (s) s.parentNode.removeChild(s);
+                var rules = [
+                    '.post-image-container{position:relative;}',
+                    '.post-image-container:after{position:absolute;top:0.5em;right:100%;padding:0.5em;border-radius:3px 0 0 3px;background:#2c2f34;}'
+                ];
+                for (var i = 0; i < images.length; i++) {
+                    rules.push('[id="' + images[i].hash + '"]:after{content:"#' + (i + 1) + '";}');
+                }
+                s = document.createElement('style');
+                s.setAttribute('id', 'numberItems');
+                s.appendChild(document.createTextNode(rules.join('\n')));
+                document.head.appendChild(s);
+                waitForChange(numberItems);
             }
 
-            const images = getImagesData();
-            const index = (images === null || images.length === 0) ? 1 : images.findIndex(a => a.hash === node.id) + 1;
-            const newElement = document.createElement('pre');
-            newElement.textContent = `#${index}`;
-            if (index > 1) node.prepend(newElement);
+            // Polls for the current post to change (navigation between posts doesn't reload the page) and renumbers.
+            function waitForChange(fn) {
+                var image = null;
+                try {
+                    image = Imgur.Gallery._instance.imgurInsideNav._.image;
+                } catch (e) {
+                    // Imgur isn't ready yet.
+                }
+                if (image && hash != image.hash && image.album_images) {
+                    hash = image.hash;
+                    fn(image.album_images.images || image.album_images);
+                } else {
+                    setTimeout(function() { waitForChange(fn); }, 50);
+                }
+            }
+
+            waitForChange(numberItems);
         }
 
-        // Add them to images already loaded.
-        for (const image of document.querySelectorAll('.post-image-container')) {
-            processAddedElement(image);
-        }
-
-        // Add them to any images loaded later.
-        createAddedElementObserver(processAddedElement).observe(postImages, { childList: true, subtree: true });
+        var s = document.createElement('script');
+        s.textContent = '(' + _injectNumberedImages + ')()';
+        document.head.appendChild(s);
     }
 
     //////////////////////////////////////////////////
