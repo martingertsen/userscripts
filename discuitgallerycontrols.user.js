@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name         Discuit: Gallery Controls
 // @namespace    https://github.com/martingertsen/userscripts
-// @version      1.1.0
+// @version      1.2.0
 // @updateURL    https://raw.githubusercontent.com/martingertsen/userscripts/main/discuitgallerycontrols.user.js
 // @downloadURL  https://raw.githubusercontent.com/martingertsen/userscripts/main/discuitgallerycontrols.user.js
-// @description  Relocates the gallery controls below the gallery images and shows the number of the current image next to them.
+// @description  Relocates the gallery controls below the gallery images, shows the number of the current image next to them, and lets you flip through the gallery by clicking the left and right 20% of the image.
 // @author       Martin Gertsen
 // @match        https://discuit.org/*
 // @match        https://discuit.net/*
@@ -12,8 +12,11 @@
 // @grant        GM_addStyle
 // ==/UserScript==
 
-// Credit to trying_to_be for the original version (Gallery Controls):
-// https://github.com/roomfullofcommits/discuitstuff/raw/refs/heads/main/gallerycontrols.user.js
+// Credit to trying_to_be for the original versions:
+// - Gallery Controls (controls below the images):
+//   https://github.com/roomfullofcommits/discuitstuff/raw/refs/heads/main/gallerycontrols.user.js
+// - Transparent Gallery Controls (click the left and right 20% of the image):
+//   https://github.com/roomfullofcommits/discuitstuff/raw/refs/heads/main/gallerycontrolsalt.user.js
 
 GM_addStyle(`
 .image-gallery-next-btn {
@@ -53,27 +56,75 @@ GM_addStyle(`
 }
 `);
 
+// Transparent click zones on the left and right 20% of the image. Clicking them triggers the previous/next buttons.
+GM_addStyle(`
+.mg-gallery-zone {
+  position: absolute;
+  z-index: 99;
+  top: 0;
+  right: 0;
+  height: calc(100% - 35px);
+  width: 20%;
+  cursor: pointer;
+  background: linear-gradient(to right, transparent, black);
+  opacity: 50%;
+
+  &.is-previous {
+    left: 0;
+    right: unset;
+    background: linear-gradient(to left, transparent, black);
+  }
+}
+`);
+
 (function() {
     'use strict';
 
     const COUNTER_CLASS = 'mg-gallery-counter';
+    const ZONE_CLASS = 'mg-gallery-zone';
 
-    // Reads the current image index from the highlighted dot and updates (or creates/removes) the counter.
+    // Finds a direct child of the gallery matching the selector, or creates one with the given class.
+    function ensureChild(gallery, selector, className, create) {
+        let element = gallery.querySelector(':scope > ' + selector);
+        if (!element) {
+            element = document.createElement('div');
+            element.className = className;
+            if (create) create(element);
+            gallery.appendChild(element);
+        }
+        return element;
+    }
+
+    function removeChildren(gallery, selector) {
+        for (const element of gallery.querySelectorAll(':scope > ' + selector)) {
+            element.remove();
+        }
+    }
+
+    // Reads the current image index from the highlighted dot and updates (or creates/removes) the counter and click zones.
     function updateCounter(gallery) {
         const dots = gallery.querySelectorAll('.image-gallery-dots .image-gallery-dot');
-        let counter = gallery.querySelector(':scope > .' + COUNTER_CLASS);
 
         // The controls are only shown when there is more than one image.
         if (dots.length <= 1) {
-            if (counter) counter.remove();
+            removeChildren(gallery, '.' + COUNTER_CLASS + ', .' + ZONE_CLASS);
             return;
         }
 
-        if (!counter) {
-            counter = document.createElement('div');
-            counter.className = COUNTER_CLASS;
-            gallery.appendChild(counter);
-        }
+        ensureChild(gallery, '.' + ZONE_CLASS + '.is-previous', ZONE_CLASS + ' is-previous', zone => {
+            zone.addEventListener('click', () => {
+                const button = gallery.querySelector(':scope > .image-gallery-next-btn.is-previous');
+                if (button) button.click();
+            });
+        });
+        ensureChild(gallery, '.' + ZONE_CLASS + ':not(.is-previous)', ZONE_CLASS, zone => {
+            zone.addEventListener('click', () => {
+                const button = gallery.querySelector(':scope > .image-gallery-next-btn:not(.is-previous)');
+                if (button) button.click();
+            });
+        });
+
+        const counter = ensureChild(gallery, '.' + COUNTER_CLASS, COUNTER_CLASS);
 
         let index = 0;
         dots.forEach((dot, i) => {
