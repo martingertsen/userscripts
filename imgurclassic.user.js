@@ -1,18 +1,20 @@
 // ==UserScript==
 // @name         Imgur: Classic design
 // @namespace    http://tampermonkey.net/
-// @version      1.0.0
-// @description  Collection of fixes and improvements for imgur's classic design: 500 character comment limit, numbers on gallery images, fixed HTML escape sequences in descriptions, vote counts on comments (also works in the new design), hidden "via Android/iPhone" badges and visible line breaks in comments.
+// @version      1.1.0
+// @description  Collection of fixes and improvements for imgur's classic design: forces the classic design via cookies, 500 character comment limit, numbers on gallery images, fixed HTML escape sequences in descriptions, vote counts on comments (also works in the new design), hidden "via Android/iPhone" badges and visible line breaks in comments.
 // @author       Martin Gertsen
 // @match        https://imgur.com/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=imgur.com
 // @grant        none
+// @run-at       document-start
 // @license      MIT
 // @downloadURL https://raw.githubusercontent.com/martingertsen/userscripts/main/imgurclassic.user.js
 // @updateURL   https://raw.githubusercontent.com/martingertsen/userscripts/main/imgurclassic.user.js
 // ==/UserScript==
 
 // This script merges the following scripts into one:
+// - Imgur Old Design (credit to /u/AyrA_ch, version 0.5)
 // - Imgur: Add vote counts to comments (credit to Corrodias: https://update.greasyfork.org/scripts/481387/Imgur%3A%20add%20vote%20counts%20to%20comments.user.js)
 // - Imgur: Classic design: Add numbers to gallery images
 // - Imgur: Classic design: Fix Comment 500 character Limit (credit to SleepProgger: https://update.greasyfork.org/scripts/463287/ImgurComment500Limit.user.js)
@@ -28,9 +30,82 @@
     // Shared state and helpers
     //////////////////////////////////////////////////
 
-    const isOldDesign = (typeof imgur !== 'undefined'); // This object only seems to exist in the old design.
+    const isHomePage = window.location.pathname === '/';
     const isGallery = window.location.pathname.startsWith('/gallery/');
     const isUserPage = window.location.pathname.startsWith('/user/');
+
+    // Set once the DOM is ready. This object only seems to exist in the old design.
+    let isOldDesign = false;
+
+    //////////////////////////////////////////////////
+    // Feature: Force the classic design (home and gallery pages, runs at document-start)
+    // Returns true if the page is being reloaded, in which case nothing else should run.
+    //////////////////////////////////////////////////
+
+    function featureForceClassicDesign() {
+        if (!isHomePage && !isGallery) {
+            return false;
+        }
+
+        // Extract all cookies
+        const cookies = document.cookie.split('; ').map(function(v) {
+            const eq = v.indexOf('=');
+            return {
+                name: v.substr(0, eq),
+                value: decodeURIComponent(v.substr(eq + 1))
+            };
+        });
+
+        function getCookie(name) {
+            return cookies.filter(function(v) { return v.name === name; })[0];
+        }
+
+        function setCookie(name, value) {
+            value = encodeURIComponent(value);
+            const existing = getCookie(name);
+            const past = (new Date(2000, 0, 1)).toUTCString();
+            const future = (new Date(2032, 0, 1)).toUTCString();
+
+            // Overwrite/create cookie if needed
+            if (existing === undefined || existing.value !== value) {
+                // Delete existing cookie first
+                document.cookie = name + '=0; Domain=imgur.com; Expires=' + past;
+                document.cookie = name + '=0; Domain=.imgur.com; Expires=' + past;
+                // Create new cookie
+                document.cookie = name + '=' + value + '; Domain=.imgur.com; Path=/; Expires=' + future;
+                return true;
+            }
+            return false;
+        }
+
+        // Detect reload loops and silently stop reloading.
+        function isReloadTrap() {
+            const cookie = getCookie('reloadtrap');
+            return cookie && 3 < +cookie.value;
+        }
+
+        function setReloadTrap() {
+            const cookie = getCookie('reloadtrap');
+            const value = cookie ? +cookie.value + 1 : 1;
+            document.cookie = 'reloadtrap=' + value + '; domain=.imgur.com; expires=' + (new Date(Date.now() + 10000)).toUTCString();
+        }
+
+        let set = false;
+        set = setCookie('frontpagebeta', '0') || set;
+        set = setCookie('frontpagebetav2', '0') || set;
+        set = setCookie('postpagebeta', '0') || set;
+        set = setCookie('postpagebetalogged', '0') || set;
+        set = setCookie('switching_from_spa_to_legacy', '1') || set;
+        if (set && !isReloadTrap()) {
+            if (window.stop) {
+                window.stop();
+            }
+            setReloadTrap();
+            location.reload();
+            return true;
+        }
+        return false;
+    }
 
     // The target element is not necessarily loaded before the script runs. Wait for it.
     function waitForElement(selector) {
@@ -426,8 +501,26 @@
     // Run all features
     //////////////////////////////////////////////////
 
-    runFeature('500 character comment limit', featureComment500Limit);
-    runFeature('Numbers on gallery images', featureGalleryImageNumbers);
-    runFeature('Fix HTML escape sequences', featureFixHtmlEscapes);
-    runFeature('Comments', featureComments);
+    // Runs at document-start, before the page's own scripts. May reload the page.
+    let reloading = false;
+    runFeature('Force classic design', () => { reloading = featureForceClassicDesign(); });
+    if (reloading) {
+        return;
+    }
+
+    // The remaining features need the DOM and the page's scripts (the "imgur" global), so wait for the DOM to be ready.
+    function runDomFeatures() {
+        isOldDesign = (typeof imgur !== 'undefined');
+
+        runFeature('500 character comment limit', featureComment500Limit);
+        runFeature('Numbers on gallery images', featureGalleryImageNumbers);
+        runFeature('Fix HTML escape sequences', featureFixHtmlEscapes);
+        runFeature('Comments', featureComments);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', runDomFeatures);
+    } else {
+        runDomFeatures();
+    }
 })();
