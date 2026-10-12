@@ -12,6 +12,9 @@
 // @grant        GM_addStyle
 // ==/UserScript==
 
+// Credit to trying_to_be for the original version (Gallery Controls):
+// https://github.com/roomfullofcommits/discuitstuff/raw/refs/heads/main/gallerycontrols.user.js
+
 GM_addStyle(`
 .image-gallery-next-btn {
   right: calc(50% - 180px) !important;
