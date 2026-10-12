@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Userscripts by Martin Gertsen</title>
+<meta name="description" content="Tampermonkey userscripts for imgur, Discuit and YouTube Music. One click to install.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b7a3e'/%3E%3Ctext x='16' y='22' font-family='monospace' font-size='18' font-weight='bold' text-anchor='middle' fill='white'%3E//%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;600&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f3f5f7;
+    --surface: #ffffff;
+    --text: #1b1f24;
+    --muted: #5c6670;
+    --line: #d6dbe0;
+    --comment: #7a8591;
+    --key: #0b5fa5;
+    --accent: #0b7a3e;
+    --accent-text: #ffffff;
+    --accent-hover: #096632;
+    --focus: #ffb000;
+    --sans: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+    --mono: "Source Code Pro", Consolas, "Courier New", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #15181c;
+      --surface: #1d2126;
+      --text: #e6e8eb;
+      --muted: #9aa4ae;
+      --line: #313843;
+      --comment: #6b7682;
+      --key: #6cb4ff;
+      --accent: #2fb96a;
+      --accent-text: #0e1a12;
+      --accent-hover: #3fcb7a;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { background: var(--bg); }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 18px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  main {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 48px 16px 80px;
+  }
+  a { color: var(--key); }
+  a:focus-visible, button:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  /* Hero: the page introduces itself the way every userscript does. */
+  .header-block {
+    font-family: var(--mono);
+    font-size: 15px;
+    line-height: 1.7;
+    margin: 0 0 40px;
+    padding: 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    color: var(--text);
+  }
+  .header-block .c { color: var(--comment); }
+  .header-block .k { color: var(--key); }
+  .header-block h1 {
+    display: inline;
+    font: inherit;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .intro {
+    max-width: 60ch;
+    margin: 0 0 32px;
+    color: var(--muted);
+  }
+  .intro a { color: inherit; }
+
+  .scripts {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--line);
+  }
+  .script {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "name install"
+      "desc install"
+      "meta install";
+    gap: 6px 24px;
+    padding: 28px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .script-name {
+    grid-area: name;
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+  .script-desc {
+    grid-area: desc;
+    margin: 0;
+    max-width: 60ch;
+  }
+  .script-meta {
+    grid-area: meta;
+    margin: 4px 0 0;
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 18px;
+  }
+  .script-meta a { color: inherit; }
+  .install {
+    grid-area: install;
+    align-self: start;
+    display: inline-block;
+    padding: 10px 18px;
+    border-radius: 6px;
+    background: var(--accent);
+    color: var(--accent-text);
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .install:hover { background: var(--accent-hover); }
+
+  @media (max-width: 540px) {
+    .script {
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        "name"
+        "desc"
+        "meta"
+        "install";
+    }
+    .install { justify-self: start; margin-top: 8px; }
+    .script-name { font-size: 22px; }
+  }
+
+  .status {
+    font-family: var(--mono);
+    font-size: 15px;
+    color: var(--muted);
+    padding: 28px 0;
+  }
+  .status.error { color: var(--text); }
+
+  footer {
+    margin-top: 40px;
+    font-size: 15px;
+    color: var(--muted);
+  }
+  footer a { color: inherit; }
+</style>
+</head>
+<body>
+<main>
+  <pre class="header-block"><span class="c">// ==UserScript==</span>
+<span class="c">//</span> <span class="k">@name</span>         <h1>Userscripts by Martin Gertsen</h1>
+<span class="c">//</span> <span class="k">@description</span>  Small fixes for the sites I use every day.
+<span class="c">//</span> <span class="k">@scripts</span>      <span id="count">loading</span>
+<span class="c">// ==/UserScript==</span></pre>
+
+  <p class="intro">Each script runs in <a href="https://www.tampermonkey.net/">Tampermonkey</a>. Click install and Tampermonkey shows you the source before adding it. Updates arrive automatically.</p>
+
+  <ul class="scripts" id="scripts">
+    <li class="status" id="status">Loading scripts from GitHub...</li>
+  </ul>
+
+  <footer>Source and issues on <a id="repo-link" href="https://github.com/martingertsen/userscripts">GitHub</a>. MIT licensed.</footer>
+</main>
+
+<script>
+(function() {
+  'use strict';
+
+  const OWNER = 'martingertsen';
+  const REPO = 'userscripts';
+  const BRANCH = 'main';
+
+  const listElement = document.getElementById('scripts');
+  const statusElement = document.getElementById('status');
+  const countElement = document.getElementById('count');
+
+  function parseHeader(source) {
+    const header = { match: [] };
+    const start = source.indexOf('// ==UserScript==');
+    const end = source.indexOf('// ==/UserScript==');
+    if (start === -1 || end === -1) return header;
+    const lines = source.slice(start, end).split(/\r?\n/);
+    for (const line of lines) {
+      const m = line.match(/^\/\/\s*@(\S+)\s+(.*)$/);
+      if (!m) continue;
+      const key = m[1];
+      const value = m[2].trim();
+      if (key === 'match' || key === 'include') {
+        header.match.push(value);
+      } else if (!(key in header)) {
+        header[key] = value;
+      }
+    }
+    return header;
+  }
+
+  function hostnames(patterns) {
+    const hosts = new Set();
+    for (const pattern of patterns) {
+      const host = pattern.replace(/^[a-z*]*:\/\//i, '').split('/')[0].replace(/^\*\./, '');
+      if (host) hosts.add(host);
+    }
+    return [...hosts];
+  }
+
+  function element(tag, className, text) {
+    const el = document.createElement(tag);
+    if (className) el.className = className;
+    if (text !== undefined) el.textContent = text;
+    return el;
+  }
+
+  function render(scripts) {
+    listElement.textContent = '';
+    for (const script of scripts) {
+      const item = element('li', 'script');
+
+      item.appendChild(element('h2', 'script-name', script.name || script.file));
+      item.appendChild(element('p', 'script-desc', script.description || ''));
+
+      const meta = element('p', 'script-meta');
+      if (script.version) meta.appendChild(element('span', '', 'v' + script.version));
+      const hosts = hostnames(script.match);
+      if (hosts.length) meta.appendChild(element('span', '', hosts.join(', ')));
+      const source = element('a', '', 'source');
+      source.href = 'https://github.com/' + OWNER + '/' + REPO + '/blob/' + BRANCH + '/' + script.file;
+      meta.appendChild(source);
+      item.appendChild(meta);
+
+      const install = element('a', 'install', 'Install');
+      install.href = 'https://raw.githubusercontent.com/' + OWNER + '/' + REPO + '/' + BRANCH + '/' + script.file;
+      install.setAttribute('aria-label', 'Install ' + (script.name || script.file));
+      item.appendChild(install);
+
+      listElement.appendChild(item);
+    }
+    countElement.textContent = scripts.length + (scripts.length === 1 ? ' script' : ' scripts');
+  }
+
+  function fail(message) {
+    statusElement.className = 'status error';
+    statusElement.textContent = message + ' The scripts are still listed on GitHub.';
+    countElement.textContent = 'unavailable';
+  }
+
+  async function load() {
+    const api = 'https://api.github.com/repos/' + OWNER + '/' + REPO + '/contents/?ref=' + BRANCH;
+    const response = await fetch(api, { headers: { Accept: 'application/vnd.github+json' } });
+    if (!response.ok) throw new Error('GitHub API responded with ' + response.status + '.');
+    const entries = await response.json();
+    const files = entries.filter(e => e.type === 'file' && e.name.endsWith('.user.js')).map(e => e.name);
+
+    const scripts = await Promise.all(files.map(async file => {
+      const r = await fetch(file, { cache: 'no-cache' });
+      if (!r.ok) throw new Error('Could not read ' + file + ' (' + r.status + ').');
+      const header = parseHeader(await r.text());
+      return Object.assign({ file }, header);
+    }));
+
+    scripts.sort((a, b) => (a.name || a.file).localeCompare(b.name || b.file));
+    render(scripts);
+  }
+
+  load().catch(error => fail(error.message));
+})();
+</script>
+</body>
+</html>
